@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfect Digit Recognizer | MNIST AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --secondary: #10b981;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --gray: #6b7280;
+            --gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            --radius: 12px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            min-height: 100vh;
+            color: var(--dark);
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        .header {
+            background: var(--gradient);
+            color: white;
+            padding: 40px;
+            border-radius: var(--radius);
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+        
+        .title {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        /* Main Content */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 30px;
+            box-shadow: var(--shadow);
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-title i {
+            font-size: 1.8rem;
+        }
+        
+        /* Upload Area */
+        .upload-area {
+            border: 3px dashed var(--primary);
+            border-radius: var(--radius);
+            padding: 50px 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8fafc;
+            margin-bottom: 20px;
+        }
+        
+        .upload-area:hover {
+            background: #f1f5f9;
+            border-color: var(--primary-dark);
+        }
+        
+        .upload-icon {
+            font-size: 3.5rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        
+        /* Canvas */
+        .canvas-container {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            border: 2px solid #e5e7eb;
+        }
+        
+        canvas {
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+            cursor: crosshair;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        /* Buttons */
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+        
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: var(--gradient);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3);
+        }
+        
+        .btn-secondary {
+            background: var(--light);
+            color: var(--dark);
+            border: 2px solid #e5e7eb;
+        }
+        
+        .btn-secondary:hover {
+            background: #f3f4f6;
+        }
+        
+        /* Results */
+        .prediction-display {
+            font-size: 6rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 25px 0;
+            text-align: center;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .confidence {
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--secondary);
+            margin-bottom: 30px;
+        }
+        
+        /* Probabilities */
+        .probability-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-top: 25px;
+        }
+        
+        @media (max-width: 768px) {
+            .probability-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        .probability-item {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .probability-item.predicted {
+            background: var(--gradient);
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .digit {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .percentage {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Message */
+        .message {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .error {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            color: #dc2626;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--gray);
+            font-size: 0.9rem;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 30px;
+        }
+        
+        /* Drawing Guide */
+        .guide {
+            background: #f0f9ff;
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-top: 25px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .guide-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .guide-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .guide-list li {
+            padding: 6px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .guide-list li i {
+            color: var(--secondary);
+        }
+        
+        /* Status */
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--secondary);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="title">Perfect Digit Recognizer</h1>
+            <p class="subtitle">Draw or upload any digit (0-9) and get instant, accurate predictions with 99%+ accuracy</p>
+            <div class="status">
+                <div class="status-dot"></div>
+                <span id="statusText">AI Model: Ready • Accuracy: 99%+</span>
+            </div>
+        </header>
+        
+        <!-- Main Content -->
+        <div class="main-grid">
+            <!-- Input Panel -->
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-pen-to-square"></i> Draw Digit</h2>
+                
+                <div class="canvas-container">
+                    <canvas id="drawCanvas" width="280" height="280"></canvas>
+                    <p style="color: var(--gray); margin-top: 10px; font-size: 0.9rem;">
+                        Draw a single digit (0-9) in the box above
+                    </p>
+                </div>
+                
+                <div class="buttons">
+                    <button class="btn btn-secondary" onclick="clearCanvas()">
+                        <i class="fas fa-eraser"></i> Clear
+                    </button>
+                    <button class="btn btn-primary" onclick="predictDrawing()">
+                        <i class="fas fa-brain"></i> Predict
+                    </button>
+                </div>
+                
+                <div class="guide">
+                    <h3 class="guide-title"><i class="fas fa-lightbulb"></i> Drawing Tips</h3>
+                    <ul class="guide-list">
+                        <li><i class="fas fa-check"></i> Draw clearly and boldly</li>
+                        <li><i class="fas fa-check"></i> Center your digit in the box</li>
+                        <li><i class="fas fa-check"></i> Make digits large and clear</li>
+                        <li><i class="fas fa-check"></i> Works perfectly with all digits 0-9</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Results Panel -->
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-chart-line"></i> Prediction Results</h2>
+                
+                <!-- Messages -->
+                <div class="message error" id="errorMessage">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="errorText"></span>
+                </div>
+                
+                <!-- Loading -->
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <h3>Analyzing your digit...</h3>
+                    <p>Our AI model is processing your input</p>
+                </div>
+                
+                <!-- Results -->
+                <div id="results" style="display: none;">
+                    <div class="prediction-display" id="predictionResult">-</div>
+                    <div class="confidence" id="confidenceText">Confidence: 0%</div>
+                    
+                    <h3 style="margin: 30px 0 20px; color: var(--dark);">All Probabilities</h3>
+                    <div class="probability-grid" id="probabilityGrid">
+                        <!-- Will be filled by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Empty State -->
+                <div id="emptyState" style="text-align: center; padding: 40px 20px; color: var(--gray);">
+                    <i class="fas fa-hand-point-left" style="font-size: 3rem; color: #e5e7eb; margin-bottom: 20px;"></i>
+                    <h3>Draw a digit to begin</h3>
+                    <p>Draw any digit from 0 to 9 in the canvas to see AI prediction</p>
+                </div>
+                
+                <!-- Upload Option -->
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                        <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                        <h3>Or Upload Image</h3>
+                        <p>Upload PNG, JPG, or JPEG images of handwritten digits</p>
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="handleFileUpload(event)">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Powered by PyTorch Deep Learning • MNIST Dataset • 99%+ Accuracy</p>
+            <p style="margin-top: 5px; font-size: 0.8rem; color: #9ca3af;">
+                Perfectly recognizes all digits 0 through 9
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // =================== CANVAS SETUP ===================
+        const canvas = document.getElementById('drawCanvas');
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+        
+        // Initialize canvas
+        function initCanvas() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.lineWidth = 22;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#1f2937';
+        }
+        initCanvas();
+        
+        // Drawing functions
+        function startDrawing(e) {
+            drawing = true;
+            ctx.beginPath();
+            ctx.moveTo(e.offsetX, e.offsetY);
+        }
+        
+        function draw(e) {
+            if (!drawing) return;
+            ctx.lineTo(e.offsetX, e.offsetY);
+            ctx.stroke();
+        }
+        
+        function stopDrawing() {
+            if (drawing) {
+                drawing = false;
+                ctx.beginPath();
+            }
+        }
+        
+        // Event listeners
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        
+        // =================== PREDICTION FUNCTIONS ===================
+        async function predictDrawing() {
+            // Check if canvas has drawing
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const isEmpty = Array.from(imageData.data).every(value => value === 255);
+            
+            if (isEmpty) {
+                showError('Please draw a digit first!');
+                return;
+            }
+            
+            const dataUrl = canvas.toDataURL('image/png');
+            await makePrediction('/draw', { image_data: dataUrl });
+        }
+        
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            if (!validTypes.includes(file.type)) {
+                showError('Please upload JPG, JPEG, or PNG images only');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            showLoading();
+            hideError();
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    displayResults(result);
+                } else {
+                    showError(result.error || 'Prediction failed');
+                }
+            } catch (error) {
+                showError('Network error');
+            } finally {
+                hideLoading();
+            }
+            
+            event.target.value = '';
+        }
+        
+        async function makePrediction(url, data) {
+            showLoading();
+            hideError();
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    displayResults(result);
+                } else {
+                    showError(result.error || 'Prediction failed');
+                }
+            } catch (error) {
+                showError('Network error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // =================== DISPLAY RESULTS ===================
+        function displayResults(result) {
+            // Hide empty state, show results
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+            
+            // Update prediction
+            const predElement = document.getElementById('predictionResult');
+            predElement.textContent = result.prediction;
+            
+            // Animate prediction
+            predElement.style.transform = 'scale(0.5)';
+            predElement.style.opacity = '0';
+            setTimeout(() => {
+                predElement.style.transition = 'all 0.5s ease';
+                predElement.style.transform = 'scale(1)';
+                predElement.style.opacity = '1';
+            }, 100);
+            
+            // Update confidence
+            const confidence = (result.confidence * 100).toFixed(1);
+            document.getElementById('confidenceText').textContent = `Confidence: ${confidence}%`;
+            
+            // Update probability grid
+            const grid = document.getElementById('probabilityGrid');
+            grid.innerHTML = '';
+            
+            result.probabilities.forEach((prob, digit) => {
+                const percentage = (prob * 100).toFixed(1);
+                const isPredicted = digit === result.prediction;
+                
+                const item = document.createElement('div');
+                item.className = `probability-item ${isPredicted ? 'predicted' : ''}`;
+                item.innerHTML = `
+                    <div class="digit">${digit}</div>
+                    <div class="percentage">${percentage}%</div>
+                `;
+                
+                grid.appendChild(item);
+            });
+        }
+        
+        // =================== UTILITY FUNCTIONS ===================
+        function clearCanvas() {
+            initCanvas();
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'block';
+            hideError();
+        }
+        
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            document.getElementById('errorText').textContent = message;
+            errorElement.style.display = 'flex';
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        }
+        
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+        
+        // =================== INITIALIZATION ===================
+        window.onload = function() {
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') clearCanvas();
+                if (e.key === 'Enter') predictDrawing();
+            });
+            
+            // Initial message
+            console.log('🎯 Perfect Digit Recognizer Ready!');
+            console.log('💡 Draw any digit (0-9) for accurate prediction');
+        };
+    </script>
+</body>
+</html>
